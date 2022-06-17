@@ -1,4 +1,4 @@
-package com.xdz.tinygit.cmd;
+package com.xdz.tinygit.cmd.model;
 
 import picocli.CommandLine;
 
