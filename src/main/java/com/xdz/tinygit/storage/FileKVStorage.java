@@ -18,20 +18,11 @@ import java.io.IOException;
 public class FileKVStorage implements IKVStorage<String, String> {
     @Override
     public String load(String key) {
-        try {
-            return FileUtil.read(key);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+        return FileUtil.read(key);
     }
 
     @Override
     public void store(String key, String value) {
-        try {
-            FileUtil.write(key, value);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        FileUtil.write(key, value);
     }
 }

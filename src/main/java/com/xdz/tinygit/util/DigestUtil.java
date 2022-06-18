@@ -11,11 +11,16 @@ import java.security.NoSuchAlgorithmException;
  * Version: 1.0<br/>
  */
 public class DigestUtil {
-    public static String sha1Hex(String source) throws NoSuchAlgorithmException {
+    public static String sha1Hex(String source) {
         if (source == null || source.isEmpty()) {
             return "";
         }
-        MessageDigest sha = MessageDigest.getInstance("SHA");
+        MessageDigest sha = null;
+        try {
+            sha = MessageDigest.getInstance("SHA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
         byte[] array = source.getBytes(StandardCharsets.UTF_8);
         byte[] digest = sha.digest(array);
         StringBuilder hexBuilder = new StringBuilder();

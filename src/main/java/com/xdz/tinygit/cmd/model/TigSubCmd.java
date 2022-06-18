@@ -1,6 +1,13 @@
 package com.xdz.tinygit.cmd.model;
 
+import com.xdz.tinygit.storage.FileKVStorage;
+import com.xdz.tinygit.storage.IKVStorage;
+import com.xdz.tinygit.util.DigestUtil;
+import com.xdz.tinygit.util.FileUtil;
+import com.xdz.tinygit.util.SettingsUtil;
 import picocli.CommandLine;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * Description: tig sub-command<br/>
@@ -9,12 +16,42 @@ import picocli.CommandLine;
  * Version: 1.0<br/>
  */
 public class TigSubCmd {
+    private static final IKVStorage<String, String> storage = new FileKVStorage();
+
+    private static void setMasterCommit(String sha1) {
+        storage.store(SettingsUtil.getSettings("dir.master"), sha1);
+    }
+
+    private static String getMasterCommit() {
+        return FileUtil.read(SettingsUtil.getSettings("dir.master"));
+    }
+
+    private static String sha1ToKey(String sha1) {
+        return SettingsUtil.getSettings("dir.objects") + "/" + sha1;
+    }
+
+    private static String loadFromDB(String sha1) {
+        return storage.load(sha1ToKey(sha1));
+    }
+
+    private static String storeToDB(String content) {
+        String sha1 = DigestUtil.sha1Hex(content);
+        storage.store(sha1ToKey(sha1), content);
+        return sha1;
+    }
+
+    private static void updateWorkingCopy(String sha1) {
+        String content = loadFromDB(sha1);
+        storage.store(SettingsUtil.getSettings("v0.file"), content);
+    }
+
     // tig init
     @CommandLine.Command(name = "init")
     public static class InitCmd implements Runnable {
         @Override
         public void run() {
-            System.out.println("init method will be called");
+            FileUtil.createDir(SettingsUtil.getSettings("dir.objects"));
+            setMasterCommit("0");
         }
     }
 
@@ -27,6 +64,10 @@ public class TigSubCmd {
         @Override
         public void run() {
             System.out.println("commit msg is :" + msg);
+            // fixed file
+            String sha1 = storeToDB(storage.load(SettingsUtil.getSettings("v0.file")));
+            setMasterCommit(sha1);
+            System.out.println("commit sha1: " + sha1);
         }
     }
 
@@ -41,6 +82,9 @@ public class TigSubCmd {
         @Override
         public void run() {
             System.out.println("checkout startPoint: " + startPoint + " branchName: " + branchName);
+            String sha1 = getMasterCommit();
+            updateWorkingCopy(sha1);
+            System.out.println("checkout done. sha1: " + sha1);
         }
     }
 
@@ -84,5 +128,10 @@ public class TigSubCmd {
         public void run() {
             System.out.println("merge branchName: " + branchName);
         }
+    }
+
+    public static void main(String[] args){
+//        new TigSubCmd.InitCmd().run();
+//        new TigSubCmd.CommitCmd().run();
     }
 }

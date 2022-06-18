@@ -9,7 +9,7 @@ import picocli.CommandLine;
  * Version: 1.0<br/>
  */
 @CommandLine.Command(
-        name = "tig",
+        name = "mygit",
         mixinStandardHelpOptions = true,
         subcommands = {
                 TigSubCmd.InitCmd.class,

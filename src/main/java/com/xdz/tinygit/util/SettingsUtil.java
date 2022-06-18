@@ -9,16 +9,20 @@ import java.util.Properties;
  * Date: 2022/6/17 13:46<br/>
  * Version: 1.0<br/>
  */
-public class TigSettingsUtil {
+public class SettingsUtil {
     public static Properties getSettings() {
         try {
             Properties properties = new Properties();
-            properties.load(TigSettingsUtil.class.getResourceAsStream("/tig.properties"));
+            properties.load(SettingsUtil.class.getResourceAsStream("/tig.properties"));
             return properties;
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+
+    public static String getSettings(String key) {
+        return (String) getSettings().get(key);
     }
 
     public static void main(String[] args) {
