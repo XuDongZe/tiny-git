@@ -1,13 +1,14 @@
 package com.xdz.tinygit.cmd;
 
+import com.alibaba.fastjson.JSONObject;
+import com.xdz.tinygit.model.CommitMeta;
 import com.xdz.tinygit.storage.FileKVStorage;
 import com.xdz.tinygit.storage.IKVStorage;
+import com.xdz.tinygit.util.DiffUtil;
 import com.xdz.tinygit.util.DigestUtil;
 import com.xdz.tinygit.util.FileUtil;
 import com.xdz.tinygit.util.SettingsUtil;
 import picocli.CommandLine;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * Description: tig sub-command<br/>
@@ -18,40 +19,108 @@ import java.nio.charset.StandardCharsets;
 public class TigSubCmd {
     private static final IKVStorage<String, String> storage = new FileKVStorage();
 
-    private static void setMasterCommit(String sha1) {
-        storage.store(SettingsUtil.getSettings("dir.master"), sha1);
+    // commit meta default creator
+
+    private static CommitMeta createCommitMeta(String sha1, String parentSha1, String msg) {
+        CommitMeta meta = new CommitMeta();
+        meta.setSha1(sha1);
+        meta.setParentSha1(parentSha1);
+        meta.setMsg(msg);
+        meta.setAuthor(SettingsUtil.getSettings("author"));
+        meta.setTs(System.currentTimeMillis());
+        return meta;
     }
 
-    private static String getMasterCommit() {
-        return FileUtil.read(SettingsUtil.getSettings("dir.master"));
+    private static CommitMeta createCommitMeta(String sha1, String msg) {
+        return createCommitMeta(sha1, loadMasterHead(), msg);
     }
 
-    private static String sha1ToKey(String sha1) {
-        return SettingsUtil.getSettings("dir.objects") + "/" + sha1;
+    // commit meta serialize
+
+    private static String metaToStr(CommitMeta meta) {
+        return JSONObject.toJSONString(meta);
     }
 
-    private static String loadFromDB(String sha1) {
-        return storage.load(sha1ToKey(sha1));
+    private static CommitMeta strToMeta(String str) {
+        return JSONObject.parseObject(str, CommitMeta.class);
     }
 
-    private static String storeToDB(String content) {
-        String sha1 = DigestUtil.sha1Hex(content);
-        storage.store(sha1ToKey(sha1), content);
-        return sha1;
+    // commit meta head pointer
+
+    private static String masterHeadKey() {
+        return SettingsUtil.getSettings("path.branch.master");
+    }
+
+    private static void storeHead(String sha1) {
+        storage.store(masterHeadKey(), sha1);
+    }
+
+    private static String loadMasterHead() {
+        return storage.load(masterHeadKey());
+    }
+
+    // logs db
+
+    private static String sha1ToCommitMetaKey(String sha1) {
+        return SettingsUtil.getSettings("path.logs") + "/" + sha1;
+    }
+
+    private static CommitMeta loadCommitMeta(String sha1) {
+        return strToMeta(storage.load(sha1ToCommitMetaKey(sha1)));
+    }
+
+    private static void storeMeta(CommitMeta meta) {
+        storage.store(sha1ToCommitMetaKey(meta.getSha1()), metaToStr(meta));
+    }
+
+    // objects db
+
+    private static String sha1ToObjectKey(String sha1) {
+        return SettingsUtil.getSettings("path.objects") + "/" + sha1;
+    }
+
+    private static String loadObject(String sha1) {
+        return storage.load(sha1ToObjectKey(sha1));
+    }
+
+    private static void storeObject(String sha1, String content) {
+        storage.store(sha1ToObjectKey(sha1), content);
+    }
+
+    // commit & checkout
+
+    private static void commitToTigResp(CommitMeta meta, String content) {
+        storeObject(meta.getSha1(), content);
+        storeMeta(meta);
+        storeHead(meta.getSha1());
     }
 
     private static void updateWorkingCopy(String sha1) {
-        String content = loadFromDB(sha1);
-        storage.store(SettingsUtil.getSettings("v0.file"), content);
+        String content = loadObject(sha1);
+        storage.store(SettingsUtil.getSettings("path.file"), content);
     }
+
+    /***
+     * sub command implement
+     ***/
 
     // tig init
     @CommandLine.Command(name = "init")
     public static class InitCmd implements Runnable {
         @Override
         public void run() {
-            FileUtil.createDir(SettingsUtil.getSettings("dir.objects"));
-            setMasterCommit("0");
+            String dir = SettingsUtil.getSettings("dir");
+            if (FileUtil.exist(dir)) {
+                System.out.println("already init: " + dir);
+                System.exit(1);
+            }
+            FileUtil.createDir(SettingsUtil.getSettings("path.objects"));
+            FileUtil.createDir(SettingsUtil.getSettings("path.logs"));
+
+            CommitMeta meta = createCommitMeta("0", null, "init resp");
+            storeMeta(meta);
+            storeHead(meta.getSha1());
+            System.out.println("init done");
         }
     }
 
@@ -63,11 +132,11 @@ public class TigSubCmd {
 
         @Override
         public void run() {
-            System.out.println("commit msg is :" + msg);
             // fixed file
-            String sha1 = storeToDB(storage.load(SettingsUtil.getSettings("v0.file")));
-            setMasterCommit(sha1);
-            System.out.println("commit sha1: " + sha1);
+            String content = storage.load(SettingsUtil.getSettings("path.file"));
+            CommitMeta meta = createCommitMeta(DigestUtil.sha1Hex(content), msg);
+            commitToTigResp(meta, content);
+            System.out.println(meta.getSha1());
         }
     }
 
@@ -81,10 +150,9 @@ public class TigSubCmd {
 
         @Override
         public void run() {
-            System.out.println("checkout startPoint: " + startPoint + " branchName: " + branchName);
-            String sha1 = getMasterCommit();
+            String sha1 = loadMasterHead();
             updateWorkingCopy(sha1);
-            System.out.println("checkout done. sha1: " + sha1);
+            System.out.println(sha1);
         }
     }
 
@@ -95,6 +163,10 @@ public class TigSubCmd {
         @Override
         public void run() {
             System.out.println("diff method is called");
+            String source = SettingsUtil.getSettings("path.file");
+            String target = SettingsUtil.getSettings("path.objects") + "/" + loadMasterHead();
+            String diffResult = DiffUtil.diff(source, target);
+            System.out.println(diffResult);
         }
     }
 
@@ -104,7 +176,16 @@ public class TigSubCmd {
 
         @Override
         public void run() {
-            System.out.println("log method is called");
+            CommitMeta head = loadCommitMeta(loadMasterHead());
+            System.out.println("sha1\tmsg\tauthor\ttime");
+            while (head != null) {
+                System.out.println(head.toLog());
+                // so must init
+                if (head.getParentSha1() == null) {
+                    break;
+                }
+                head = loadCommitMeta(head.getParentSha1());
+            }
         }
     }
 
@@ -130,8 +211,9 @@ public class TigSubCmd {
         }
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
 //        new TigSubCmd.InitCmd().run();
 //        new TigSubCmd.CommitCmd().run();
+        new LogCmd().run();
     }
 }

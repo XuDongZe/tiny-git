@@ -14,22 +14,26 @@ import java.nio.file.Paths;
  * Version: 1.0<br/>
  */
 public class FileUtil {
-    public static String read(String fileName) {
+    public static String read(String path) {
         try {
-            return new String(Files.readAllBytes(Paths.get(fileName)), StandardCharsets.UTF_8);
+            return new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public static void write(String fileName, String content) {
+    public static void write(String path, String content) {
         try {
-            createFile(fileName);
-            Files.write(Paths.get(fileName), content.getBytes(StandardCharsets.UTF_8));
+            createFile(path);
+            Files.write(Paths.get(path), content.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static boolean exist(String path) {
+        return new File(path).exists();
     }
 
     public static boolean createDir(String path) {
