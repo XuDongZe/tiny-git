@@ -1,4 +1,4 @@
-package com.xdz.tinygit.cmd.model;
+package com.xdz.tinygit.cmd;
 
 import com.xdz.tinygit.storage.FileKVStorage;
 import com.xdz.tinygit.storage.IKVStorage;

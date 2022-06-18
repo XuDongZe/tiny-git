@@ -1,6 +1,6 @@
 package com.xdz.tinygit.cmd.parser;
 
-import com.xdz.tinygit.cmd.model.TigCmd;
+import com.xdz.tinygit.cmd.TigCmd;
 import picocli.CommandLine;
 
 /**

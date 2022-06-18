@@ -1,4 +1,4 @@
-package com.xdz.tinygit.cmd.model;
+package com.xdz.tinygit.cmd;
 
 import picocli.CommandLine;
 
@@ -13,12 +13,12 @@ import picocli.CommandLine;
         mixinStandardHelpOptions = true,
         subcommands = {
                 TigSubCmd.InitCmd.class,
-                TigSubCmd.CheckoutCmd.class,
                 TigSubCmd.CommitCmd.class,
+                TigSubCmd.CheckoutCmd.class,
                 TigSubCmd.DiffCmd.class,
                 TigSubCmd.LogCmd.class,
                 TigSubCmd.BranchCmd.class,
-                TigSubCmd.MergeCmd.class
+                TigSubCmd.MergeCmd.class,
         }
 )
 public class TigCmd {
