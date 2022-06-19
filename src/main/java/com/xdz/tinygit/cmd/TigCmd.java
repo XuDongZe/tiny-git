@@ -18,6 +18,7 @@ import picocli.CommandLine;
                 TigSubCmd.DiffCmd.class,
                 TigSubCmd.LogCmd.class,
                 TigSubCmd.BranchCmd.class,
+                TigSubCmd.SwitchCmd.class,
                 TigSubCmd.MergeCmd.class,
         }
 )

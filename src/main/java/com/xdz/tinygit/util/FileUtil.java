@@ -6,6 +6,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Description: file util<br/>
@@ -30,6 +35,10 @@ public class FileUtil {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static boolean delete(String path) {
+        return new File(path).delete();
     }
 
     public static boolean exist(String path) {
@@ -59,5 +68,23 @@ public class FileUtil {
             e.printStackTrace();
         }
         return false;
+    }
+
+    // list first-child files in directory
+    public static List<String> listAllDirectFile(String dirPath) {
+        File file = new File(dirPath);
+        if (!file.exists() || !file.isDirectory()) {
+            return new ArrayList<>();
+        }
+        String[] arr = file.list();
+        if (arr == null || arr.length == 0) {
+            return new ArrayList<>();
+        }
+        return Arrays.asList(arr);
+    }
+
+    public static void main(String[] args) {
+        List<String> strings = listAllDirectFile(".idea");
+        System.out.println(Arrays.toString(strings.toArray()));
     }
 }

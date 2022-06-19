@@ -25,4 +25,9 @@ public class FileKVStorage implements IKVStorage<String, String> {
     public void store(String key, String value) {
         FileUtil.write(key, value);
     }
+
+    @Override
+    public boolean remove(String key) {
+        return FileUtil.delete(key);
+    }
 }
