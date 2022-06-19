@@ -10,6 +10,8 @@ import com.xdz.tinygit.util.FileUtil;
 import com.xdz.tinygit.util.SettingsUtil;
 import picocli.CommandLine;
 
+import java.util.Objects;
+
 /**
  * Description: tig sub-command<br/>
  * Author: dongze.xu<br/>
@@ -115,11 +117,7 @@ public class TigSubCmd {
                 System.exit(1);
             }
             FileUtil.createDir(SettingsUtil.getSettings("path.objects"));
-            FileUtil.createDir(SettingsUtil.getSettings("path.logs"));
-
-            CommitMeta meta = createCommitMeta("0", null, "init resp");
-            storeMeta(meta);
-            storeHead(meta.getSha1());
+            storeHead("0");
             System.out.println("init done");
         }
     }
@@ -181,7 +179,7 @@ public class TigSubCmd {
             while (head != null) {
                 System.out.println(head.toLog());
                 // so must init
-                if (head.getParentSha1() == null) {
+                if (Objects.equals(head.getParentSha1(), "0")) {
                     break;
                 }
                 head = loadCommitMeta(head.getParentSha1());
